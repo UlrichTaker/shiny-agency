@@ -1,3 +1,4 @@
+Projet en cours
 Ne pas oublier de lancer la commande npm add pour installer les dependances necessaires
 Ce code fonctionne avec la version 17 de react
 
