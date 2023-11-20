@@ -3,72 +3,75 @@ import PropTypes from 'prop-types'
 import DefaultPicture from '../../assets/profile.png'
 import styled from 'styled-components'
 import colors from '../../utils/styles/colors'
+import { useTheme } from '../../utils/hooks'
 
-//crée un composant stylisé pour un label de carte (<span>)
 const CardLabel = styled.span`
-    color: #5843e4;
-    font-size: 22px;
-    font-weight: normal;
-    padding-left: 15px;
+  color: ${({ theme }) => (theme === 'light' ? colors.primary : '#ffffff')};
+  font-size: 22px;
+  font-weight: normal;
+  padding-left: 15px;
 `
 
 const CardTitle = styled.span`
-  color: black;
+  color: ${({ theme }) => (theme === 'light' ? '#000000' : '#ffffff')};
   font-size: 22px;
   font-weight: normal;
   align-self: center;
 `
 
-//crée un composant stylisé pour une image de carte (<img>)
 const CardImage = styled.img`
-    height: 150px;
-    width: 150px;
-    align-self: center;
-    border-radius: 50%;
-    
+  height: 150px;
+  width: 150px;
+  align-self: center;
+  border-radius: 50%;
 `
 
-//crée un composant stylisé pour l'enveloppe générale de la carte (<div>)
 const CardWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    padding: 15px;
-    background-color: ${colors.backgroundLight};
-    border-radius: 30px;
-    width: 300px;
-    height: 300px;
-    transition: 200ms;
-    &:hover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 15px;
+  background-color: ${({ theme }) =>
+    theme === 'light' ? colors.backgroundLight : colors.backgroundDark};
+  border-radius: 30px;
+  width: 300px;
+  height: 300px;
+  &:hover {
     cursor: pointer;
-    box-shadow: 2px 2px 10px #e2e3e9;
-    }
+  }
 `
 
-// Définition du composant Card qui utilise les composants stylisés précédemment définis pour créer une carte stylisée avec une étiquette, une image, et un titre.
+// Composant Card
 function Card({ label, title, picture }) {
-    return (
-      <CardWrapper>
-        <CardLabel>{label}</CardLabel>
-        <CardImage src={picture} alt="freelance" />
-        <CardTitle>{title}</CardTitle>
-      </CardWrapper>
-    )
-  }
+  // Utilise le hook useTheme pour obtenir le thème actuel
+  const { theme } = useTheme();
 
+  // Rendu du composant avec des styles basés sur le thème
+  return (
+    <CardWrapper theme={theme}>
+      {/* Étiquette de la carte (job label) avec le thème actuel */}
+      <CardLabel theme={theme}>{label}</CardLabel>
 
-// Déclaration des types attendus pour les propriétés (props) du composant
+      {/* Image de la carte avec la source provenant des propriétés (picture) */}
+      <CardImage src={picture} alt="freelance" />
+
+      {/* Titre de la carte (name/title) avec le thème actuel */}
+      <CardTitle theme={theme}>{title}</CardTitle>
+    </CardWrapper>
+  );
+}
+
+// Définit les types attendus pour les propriétés (props) du composant Card
 Card.propTypes = {
-    label: PropTypes.string.isRequired,   // Étiquette en tant que chaîne de caractères requise
-    title: PropTypes.string.isRequired,   // Titre en tant que chaîne de caractères requise
-    picture: PropTypes.string.isRequired, // Image en tant que chaîne de caractères requise
-  };
-  
-  // Définition des valeurs par défaut pour les propriétés (props) du composant. 
-  Card.defaultProps = {
-    label: '',                          // Par défaut, l'étiquette est une chaîne vide
-    title: '',                          // Par défaut, le titre est une chaîne vide
-    picture: DefaultPicture,            // Par défaut, l'image est l'image par défaut importée
-  };
-  
+  label: PropTypes.string.isRequired,   // Attend une chaîne de caractères pour l'étiquette
+  title: PropTypes.string.isRequired,   // Attend une chaîne de caractères pour le titre
+  picture: PropTypes.string.isRequired, // Attend une chaîne de caractères pour la source de l'image
+};
+
+// Définit des valeurs par défaut pour les propriétés du composant Card au cas où elles ne seraient pas fournies
+Card.defaultProps = {
+  label: '',                           // Valeur par défaut pour l'étiquette (chaîne vide)
+  title: '',                           // Valeur par défaut pour le titre (chaîne vide)
+  picture: DefaultPicture,              // Valeur par défaut pour la source de l'image (une image par défaut)
+};
 export default Card

@@ -1,12 +1,14 @@
 // Ce composant Survey est responsable du rendu et de la gestion de l'enquête
 
-import { useState, useEffect, useContext } from 'react'
+import { useContext } from 'react'
 import { useParams } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import styled from 'styled-components'
 import colors from '../../utils/styles/colors'
 import { Loader } from '../../utils/styles/Atoms'
 import { SurveyContext } from '../../utils/context'
+import { useFetch } from '../../utils/hooks'
+import { useTheme } from '../../utils/hooks'
 
 const SurveyContainer = styled.div`
   display: flex;
@@ -17,16 +19,18 @@ const SurveyContainer = styled.div`
 const QuestionTitle = styled.h2`
   text-decoration: underline;
   text-decoration-color: ${colors.primary};
+  color: ${({ theme }) => (theme === 'light' ? '#000000' : '#ffffff')};
 `
 
 const QuestionContent = styled.span`
   margin: 30px;
+  color: ${({ theme }) => (theme === 'light' ? '#000000' : '#ffffff')};
 `
 
 const LinkWrapper = styled.div`
   padding-top: 30px;
   & a {
-    color: black;
+    color: ${({ theme }) => (theme === 'light' ? '#000000' : '#ffffff')};
   }
   & a:first-of-type {
     margin-right: 20px;
@@ -40,7 +44,9 @@ const ReplyBox = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${colors.backgroundLight};
+  background-color: ${({ theme }) =>
+    theme === 'light' ? colors.backgroundLight : colors.backgroundDark};
+  color: ${({ theme }) => (theme === 'light' ? '#000000' : '#ffffff')};
   border-radius: 30px;
   cursor: pointer;
   box-shadow: ${(props) =>
@@ -58,98 +64,65 @@ const ReplyWrapper = styled.div`
   flex-direction: row;
 `
 
-// Importe le hook useParams depuis React Router pour extraire les paramètres de l'URL
 function Survey() {
-  // Extraction du paramètre 'questionNumber' de l'URL
+  // Importe le hook useParams de React Router pour extraire les paramètres d'URL
   const { questionNumber } = useParams();
-
-  // Conversion du 'questionNumber' en un entier
+  // Convertit le numéro de question extrait en tant qu'entier
   const questionNumberInt = parseInt(questionNumber);
-
-  // Calcul du numéro de la question précédente en vérifiant si la question actuelle est la première
+  // Calcule le numéro de la question précédente
   const prevQuestionNumber = questionNumberInt === 1 ? 1 : questionNumberInt - 1;
-
-  // Calcul du numéro de la question suivante
+  // Calcule le numéro de la question suivante
   const nextQuestionNumber = questionNumberInt + 1;
-
-  // Utilisation du hook useState pour gérer l'état local du composant
-  const [surveyData, setSurveyData] = useState({});
-  const [isDataLoading, setDataLoading] = useState(false);
+  // Utilise le hook useTheme pour obtenir le thème actuel de l'application
+  const { theme } = useTheme();
+  // Utilise le hook useContext pour obtenir les fonctions saveAnswers et les réponses actuelles depuis le contexte SurveyContext
   const { saveAnswers, answers } = useContext(SurveyContext);
-  const [error, setError] = useState(false);
-
-  // Fonction pour enregistrer une réponse
+  // Fonction pour sauvegarder la réponse à la question actuelle
   function saveReply(answer) {
     saveAnswers({ [questionNumber]: answer });
   }
-
-  // Utilisation du hook useEffect pour effectuer des effets de côté dans le composant
-  useEffect(() => {
-    async function fetchSurvey() {
-      // Indique que la récupération des données est en cours
-      setDataLoading(true);
-
-      try {
-        // Effectue une requête à l'API pour obtenir les données du questionnaire
-        const response = await fetch(`http://localhost:8000/survey`);
-        const { surveyData } = await response.json();
-        
-        // Met à jour l'état local avec les données du questionnaire
-        setSurveyData(surveyData);
-      } catch (err) {
-        console.log(err);
-        // En cas d'erreur, déclenche le flag d'erreur
-        setError(true);
-      } finally {
-        // Indique que la récupération des données est terminée
-        setDataLoading(false);
-      }
-    }
-
-    // Appelle la fonction fetchSurvey au montage du composant (une seule fois avec une dépendance vide [])
-    fetchSurvey();
-  }, []);
-
-  // Si une erreur s'est produite pendant la récupération des données, affiche un message d'erreur
+  // Utilise le hook useFetch pour récupérer les données de l'enquête depuis l'URL spécifiée
+  const { data, isLoading, error } = useFetch(`http://localhost:8000/survey`);
+  // Extrait les données de l'enquête, si elles existent
+  const surveyData = data?.surveyData;
+  // Vérifie s'il y a une erreur lors de la récupération des données
   if (error) {
+    // Renvoie un message d'erreur si une erreur est détectée
     return <span>Oups il y a eu un problème</span>;
   }
-
-  // Le rendu du composant Survey inclut le titre de la question, le contenu de la question (ou un indicateur de chargement),
-  // et des liens de navigation vers les questions précédentes et suivantes ou vers les résultats si la dernière question est atteinte.
+  // Rendu du composant Survey avec les éléments stylisés
   return (
     <SurveyContainer>
-      <QuestionTitle>Question {questionNumber}</QuestionTitle>
-      {isDataLoading ? (
-        // Affiche un indicateur de chargement pendant la récupération des données
+      {/* Affiche le titre de la question avec le thème actuel */}
+      <QuestionTitle theme={theme}>Question {questionNumber}</QuestionTitle>
+      {/* Affiche un indicateur de chargement ou le contenu de la question, en fonction de l'état de chargement */}
+      {isLoading ? (
         <Loader />
       ) : (
-        // Affiche le contenu de la question une fois les données récupérées
-        <QuestionContent>{surveyData[questionNumber]}</QuestionContent>
+        <QuestionContent theme={theme}>{surveyData[questionNumber]}</QuestionContent>
       )}
-      {answers && (
-        // Si des réponses existent, affiche les options de réponse
-        <ReplyWrapper>
-          <ReplyBox
-            onClick={() => saveReply(true)}
-            isSelected={answers[questionNumber] === true}
-          >
-            Oui
-          </ReplyBox>
-          <ReplyBox
-            onClick={() => saveReply(false)}
-            isSelected={answers[questionNumber] === false}
-          >
-            Non
-          </ReplyBox>
-        </ReplyWrapper>
-      )}
-      <LinkWrapper>
-        {/* Lien vers la question précédente */}
-        <Link to={`/survey/${prevQuestionNumber}`}>Précédent</Link>
+      {/* Boîtes de réponse avec des boutons pour "Oui" et "Non", chacun associé à la fonction saveReply */}
+      <ReplyWrapper>
+        <ReplyBox
+          onClick={() => saveReply(true)}
+          isSelected={answers[questionNumber] === true}
+          theme={theme}
+        >
+          Oui
+        </ReplyBox>
+        <ReplyBox
+          onClick={() => saveReply(false)}
+          isSelected={answers[questionNumber] === false}
+          theme={theme}
+        >
+          Non
+        </ReplyBox>
+      </ReplyWrapper>
 
-        {/* Condition pour afficher le lien suivant ou le lien vers les résultats */}
-        {surveyData[questionNumberInt + 1] ? (
+      {/* Liens de navigation vers les questions précédentes, suivantes ou les résultats, en fonction des données disponibles */}
+      <LinkWrapper theme={theme}>
+        <Link to={`/survey/${prevQuestionNumber}`}>Précédent</Link>
+        {surveyData && surveyData[questionNumberInt + 1] ? (
           <Link to={`/survey/${nextQuestionNumber}`}>Suivant</Link>
         ) : (
           <Link to="/results">Résultats</Link>

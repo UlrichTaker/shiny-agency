@@ -1,5 +1,4 @@
-import { useContext } from 'react'
-import { ThemeContext } from '../context'
+import { useTheme } from '../hooks';
 import { createGlobalStyle } from 'styled-components'
 
 // Définit les styles globaux en utilisant createGlobalStyle
@@ -18,7 +17,7 @@ const StyledGlobalStyle = createGlobalStyle`
 // Définit une fonction composant React appelée GlobalStyle
 function GlobalStyle() {
     // Utilise useContext pour extraire la valeur du thème depuis ThemeContext
-    const { theme } = useContext(ThemeContext);
+    const { theme } = useTheme()
 
     // Renvoie le composant StyledGlobalStyle avec la propriété isDarkMode définie en fonction du thème
     return <StyledGlobalStyle isDarkMode={theme === 'dark'} />;

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import Card from '../../components/Card'
 import styled from 'styled-components'
 import colors from '../../utils/styles/colors'
 import { Loader } from '../../utils/styles/Atoms'
+import { useTheme, useFetch } from '../../utils/hooks'
 
 const CardsContainer = styled.div`
   display: grid;
@@ -15,9 +15,9 @@ const CardsContainer = styled.div`
 
 const PageTitle = styled.h1`
   font-size: 30px;
-  color: black;
   text-align: center;
   padding-bottom: 30px;
+  color: ${({ theme }) => (theme === 'light' ? '#000000' : '#ffffff')};
 `
 
 const PageSubtitle = styled.h2`
@@ -26,6 +26,7 @@ const PageSubtitle = styled.h2`
   font-weight: 300;
   text-align: center;
   padding-bottom: 30px;
+  color: ${({ theme }) => (theme === 'light' ? '#000000' : '#ffffff')};
 `
 
 const LoaderWrapper = styled.div`
@@ -33,54 +34,46 @@ const LoaderWrapper = styled.div`
   justify-content: center;
 `
 
+// Composant Freelances. La fonction Freelances récupère une liste de freelances depuis une API, utilise le thème actuel, et rend une liste de cartes (Card) pour afficher les profils des freelances
 function Freelances() {
-  // État local pour gérer le chargement des données, les erreurs et la liste des freelances
-  const [isDataLoading, setDataLoading] = useState(false)
-  const [error, setError] = useState(false)
-  const [freelancersList, setFreelancesList] = useState([])
+  // Utilise le hook useTheme pour obtenir le thème actuel
+  const { theme } = useTheme();
 
-  // Utilisation de useEffect pour effectuer des opérations après le rendu initial du composant
-  useEffect(() => {
-    async function fetchFreelances() {
-      setDataLoading(true) // Marque le début du chargement des données
+  // Utilise le hook useFetch pour récupérer les données des freelances depuis l'API
+  const { data, isLoading, error } = useFetch(
+    `http://localhost:8000/freelances`
+  );
 
-      try {
-        const response = await fetch(`http://localhost:8000/freelances`) // Effectue une requête GET à l'API pour récupérer la liste de freelances
-        const { freelancersList } = await response.json() // Extrait la liste de freelances depuis la réponse JSON
-        setFreelancesList(freelancersList) // Met à jour l'état local avec la liste de freelances
-      } catch (err) {
-        console.log('===== error =====', err)
-        setError(true) // En cas d'erreur, marque l'erreur comme vraie
-      } finally {
-        setDataLoading(false) // Marque la fin du chargement des données, qu'il ait réussi ou échoué
-      }
-    }
+  // Utilise l'opérateur "?." pour s'assurer que data existe avant d'accéder à sa propriété freelancersList
+  const freelancersList = data?.freelancersList;
 
-  // Appelle la fonction pour récupérer la liste de freelances lors du rendu initial du composant
-    fetchFreelances()
-  }, []) // Le tableau vide [] indique que ce useEffect s'exécute une seule fois après le rendu initial
-
-  // Si une erreur s'est produite lors du chargement des données, affiche un message d'erreur
+  // Gère les erreurs éventuelles lors de la récupération des données
   if (error) {
-    return <span>Oups il y a eu un problème</span>
+    return <span>Oups il y a eu un problème</span>;
   }
 
-  // Rendu du composant
+  // Rendu conditionnel en fonction de l'état de chargement
   return (
     <div>
-      <PageTitle>Trouvez votre prestataire</PageTitle>
-      <PageSubtitle>
+      {/* Titre de la page avec le thème actuel */}
+      <PageTitle theme={theme}>Trouvez votre prestataire</PageTitle>
+
+      {/* Sous-titre de la page avec le thème actuel */}
+      <PageSubtitle theme={theme}>
         Chez Shiny nous réunissons les meilleurs profils pour vous.
       </PageSubtitle>
-      {/* Si les données sont en cours de chargement, affiche un composant Loader, sinon affiche la liste de profils de freelances */}
-      {isDataLoading ? (
+
+      {/* Rendu conditionnel en fonction de l'état de chargement */}
+      {isLoading ? (
+        // Affiche un indicateur de chargement si les données sont en cours de chargement
         <LoaderWrapper>
-          <Loader />
+          <Loader theme={theme} />
         </LoaderWrapper>
       ) : (
+        // Affiche la liste des cartes (profils de freelances) une fois le chargement terminé
         <CardsContainer>
-          {/* Map sur la liste des freelances et rendu de chaque profil en utilisant le composant Card */}
           {freelancersList.map((profile, index) => (
+            // Chaque carte (Card) représente un profil de freelance
             <Card
               key={`${profile.name}-${index}`}
               label={profile.job}
@@ -91,10 +84,7 @@ function Freelances() {
         </CardsContainer>
       )}
     </div>
-  )
+  );
 }
 
-
 export default Freelances
-
-//  ce composant effectue une requête vers une API (supposée hébergée localement à http://localhost:8000/freelances), récupère la liste des freelances, gère le chargement et les erreurs, puis affiche les profils de freelances ou un message d'erreur en conséquence. Il utilise également des composants stylisés comme PageTitle, PageSubtitle, LoaderWrapper, et CardsContainer, ainsi que le composant Card pour représenter chaque profil de freelance.
