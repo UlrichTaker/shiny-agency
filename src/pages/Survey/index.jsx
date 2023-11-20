@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react'
+// Ce composant Survey est responsable du rendu et de la gestion de l'enquête
+
+import { useState, useEffect, useContext } from 'react'
 import { useParams } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import styled from 'styled-components'
 import colors from '../../utils/styles/colors'
 import { Loader } from '../../utils/styles/Atoms'
+import { SurveyContext } from '../../utils/styles/context'
 
 const SurveyContainer = styled.div`
   display: flex;
@@ -30,67 +33,122 @@ const LinkWrapper = styled.div`
   }
 `
 
-// Dans la fonction Survey, les hooks d'état (useState) sont utilisés pour gérer l'état local du composant. useParams est utilisé pour extraire le paramètre questionNumber de l'URL. Les variables prevQuestionNumber et nextQuestionNumber sont calculées pour la navigation entre les questions.
+const ReplyBox = styled.button`
+  border: none;
+  height: 100px;
+  width: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${colors.backgroundLight};
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: ${(props) =>
+    props.isSelected ? `0px 0px 0px 2px ${colors.primary} inset` : 'none'};
+  &:first-child {
+    margin-right: 15px;
+  }
+  &:last-of-type {
+    margin-left: 15px;
+  }
+`
+
+const ReplyWrapper = styled.div`
+  display: flex;
+  flex-direction: row;
+`
+
+// Importe le hook useParams depuis React Router pour extraire les paramètres de l'URL
 function Survey() {
-  const { questionNumber } = useParams() // Extraction du paramètre 'questionNumber' de l'URL
-  const questionNumberInt = parseInt(questionNumber) // Conversion du 'questionNumber' en un entier
-  const prevQuestionNumber = questionNumberInt === 1 ? 1 : questionNumberInt - 1   // Calcul du numéro de la question précédente en vérifiant si la question actuelle est la première.
-  const nextQuestionNumber = questionNumberInt + 1  // Calcul du numéro de la question suivante
-  const [surveyData, setSurveyData] = useState({})
-  const [isDataLoading, setDataLoading] = useState(false)
-  const [error, setError] = useState(false)
+  // Extraction du paramètre 'questionNumber' de l'URL
+  const { questionNumber } = useParams();
 
-  // Cette syntaxe permet aussi bien de faire des calls API.
-  // Mais pour utiliser await dans une fonction, il faut que celle-ci soit async (pour asynchrone).
-  // Comme la fonction passée à useEffect ne peut pas être asynchrone,
-  // il faut utiliser une fonction qui est appelée dans useEffect et déclarée en dehors, comme ici 👇.
-  // Essayez de commenter le code créé dans le chapitre et de décommenter fetchData pour voir.
+  // Conversion du 'questionNumber' en un entier
+  const questionNumberInt = parseInt(questionNumber);
 
-  // async function fetchData() {
-  //   try {
-  //     const response = await fetch(`http://localhost:8000/survey`)
-  //     const { surveyData } = await response.json()
-  //     setSurveyData(surveyData)
-  //   } catch (error) {
-  // console.log('===== error =====', error)
-  // setError(true)
-  //   }
-  // }
+  // Calcul du numéro de la question précédente en vérifiant si la question actuelle est la première
+  const prevQuestionNumber = questionNumberInt === 1 ? 1 : questionNumberInt - 1;
 
+  // Calcul du numéro de la question suivante
+  const nextQuestionNumber = questionNumberInt + 1;
 
-  // Le hook useEffect est utilisé pour effectuer des effets de côté dans le composant. Ici, il fait une requête à http://localhost:8000/survey pour obtenir les données du questionnaire. Ces données sont stockées dans l'état local (surveyData).
-  useEffect(() => {
-    async function fetchSurvey() {
-      setDataLoading(true)
-      try {
-        const response = await fetch(`http://localhost:8000/survey`)
-        const { surveyData } = await response.json()
-        setSurveyData(surveyData)
-      } catch (err) {
-        console.log(err)
-        setError(true)
-      } finally {
-        setDataLoading(false)
-      }
-    }
-    fetchSurvey()
-  }, [])
-// Si une erreur se produit pendant la récupération des données, un message d'erreur est rendu.
-  if (error) {
-    return <span>Oups il y a eu un problème</span>
+  // Utilisation du hook useState pour gérer l'état local du composant
+  const [surveyData, setSurveyData] = useState({});
+  const [isDataLoading, setDataLoading] = useState(false);
+  const { saveAnswers, answers } = useContext(SurveyContext);
+  const [error, setError] = useState(false);
+
+  // Fonction pour enregistrer une réponse
+  function saveReply(answer) {
+    saveAnswers({ [questionNumber]: answer });
   }
 
-  // le rendu du composant Survey inclut le titre de la question, le contenu de la question (ou un indicateur de chargement), et des liens de navigation vers les questions précédentes et suivantes ou vers les résultats si la dernière question est atteinte.
+  // Utilisation du hook useEffect pour effectuer des effets de côté dans le composant
+  useEffect(() => {
+    async function fetchSurvey() {
+      // Indique que la récupération des données est en cours
+      setDataLoading(true);
+
+      try {
+        // Effectue une requête à l'API pour obtenir les données du questionnaire
+        const response = await fetch(`http://localhost:8000/survey`);
+        const { surveyData } = await response.json();
+        
+        // Met à jour l'état local avec les données du questionnaire
+        setSurveyData(surveyData);
+      } catch (err) {
+        console.log(err);
+        // En cas d'erreur, déclenche le flag d'erreur
+        setError(true);
+      } finally {
+        // Indique que la récupération des données est terminée
+        setDataLoading(false);
+      }
+    }
+
+    // Appelle la fonction fetchSurvey au montage du composant (une seule fois avec une dépendance vide [])
+    fetchSurvey();
+  }, []);
+
+  // Si une erreur s'est produite pendant la récupération des données, affiche un message d'erreur
+  if (error) {
+    return <span>Oups il y a eu un problème</span>;
+  }
+
+  // Le rendu du composant Survey inclut le titre de la question, le contenu de la question (ou un indicateur de chargement),
+  // et des liens de navigation vers les questions précédentes et suivantes ou vers les résultats si la dernière question est atteinte.
   return (
     <SurveyContainer>
       <QuestionTitle>Question {questionNumber}</QuestionTitle>
       {isDataLoading ? (
+        // Affiche un indicateur de chargement pendant la récupération des données
         <Loader />
       ) : (
+        // Affiche le contenu de la question une fois les données récupérées
         <QuestionContent>{surveyData[questionNumber]}</QuestionContent>
       )}
+      {answers && (
+        // Si des réponses existent, affiche les options de réponse
+        <ReplyWrapper>
+          <ReplyBox
+            onClick={() => saveReply(true)}
+            isSelected={answers[questionNumber] === true}
+          >
+            Oui
+          </ReplyBox>
+          <ReplyBox
+            onClick={() => saveReply(false)}
+            isSelected={answers[questionNumber] === false}
+          >
+            Non
+          </ReplyBox>
+        </ReplyWrapper>
+      )}
       <LinkWrapper>
+        {/* Lien vers la question précédente */}
         <Link to={`/survey/${prevQuestionNumber}`}>Précédent</Link>
+
+        {/* Condition pour afficher le lien suivant ou le lien vers les résultats */}
         {surveyData[questionNumberInt + 1] ? (
           <Link to={`/survey/${nextQuestionNumber}`}>Suivant</Link>
         ) : (
@@ -98,7 +156,8 @@ function Survey() {
         )}
       </LinkWrapper>
     </SurveyContainer>
-  )
+  );
 }
 
-export default Survey
+// Exporte le composant Survey comme composant par défaut
+export default Survey;
